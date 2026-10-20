@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>华为数通设备健康巡检报告 - {{ task.name }}</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-800: #1e293b;
+      --gray-900: #0f172a;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.6;
+      padding: 24px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header-card {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+    .header-info h1 {
+      font-size: 26px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .header-badge {
+      display: inline-block;
+      font-size: 12px;
+      padding: 2px 8px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+    .header-meta {
+      font-size: 13px;
+      color: var(--gray-300);
+    }
+    .score-badge-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 16px 24px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .score-number {
+      font-size: 44px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .score-title {
+      font-size: 13px;
+      color: var(--gray-300);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .score-healthy { color: #34d399; }
+    .score-warning { color: #fbbf24; }
+    .score-critical { color: #f87171; }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stat-val {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--gray-600);
+    }
+
+    /* Section */
+    .section-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--gray-200);
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Issues list */
+    .issue-item {
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: #fef2f2;
+      border-left: 4px solid var(--danger);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .issue-device {
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-right: 12px;
+    }
+    .issue-text {
+      color: var(--gray-700);
+      flex: 1;
+    }
+
+    /* Matrix Table */
+    .table-responsive {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      text-align: left;
+    }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    th {
+      background: var(--gray-100);
+      color: var(--gray-700);
+      font-weight: 600;
+    }
+    tr:hover td {
+      background-color: var(--gray-50);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .badge-healthy {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .badge-warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .badge-critical {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .badge-tag {
+      background: #e0e7ff;
+      color: #3730a3;
+      text-transform: uppercase;
+    }
+
+    /* Device Cards */
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 16px;
+    }
+    .dev-card {
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 16px;
+      background: #ffffff;
+      transition: box-shadow 0.2s;
+    }
+    .dev-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .dev-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .dev-card-title {
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .dev-card-sub {
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+    .dev-metrics-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .dev-metrics-label {
+      color: var(--gray-600);
+    }
+    .dev-metrics-val {
+      font-weight: 600;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header-card">
+      <div class="header-info">
+        <h1>
+          华为数通设备健康巡检报告
+          <span class="header-badge">VRP 自动化巡检</span>
+        </h1>
+        <div class="header-meta">
+          <span>任务名称: <strong>{{ task.name }}</strong></span> &nbsp;|&nbsp;
+          <span>巡检开始: {{ start_time_str }}</span> &nbsp;|&nbsp;
+          <span>巡检结束: {{ end_time_str }}</span>
+        </div>
+      </div>
+      <div class="score-badge-wrap">
+        <div>
+          <div class="score-title">全网健康度评分</div>
+          <div class="score-number score-{{ overall_level }}">{{ overall_score }}</div>
+        </div>
+        <div>
+          <span class="badge badge-{{ overall_level }}" style="font-size: 14px; padding: 6px 14px;">
+            {{ overall_score | score_level }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats summary -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">巡检设备总数</div>
+          <div class="stat-val">{{ total_devices }} 台</div>
+        </div>
+        <div style="font-size: 32px;">🌐</div>
+      </div>
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">健康状态正常</div>
+          <div class="stat-val" style="color: var(--success);">{{ healthy_count }} 台</div>
+        </div>
+        <div style="font-size: 32px;">✅</div>
+      </div>
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">轻微告警关注</div>
+          <div class="stat-val" style="color: var(--warning);">{{ warning_count }} 台</div>
+        </div>
+        <div style="font-size: 32px;">⚠️</div>
+      </div>
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">严重/失败隐患</div>
+          <div class="stat-val" style="color: var(--danger);">{{ critical_count + failed_count }} 台</div>
+        </div>
+        <div style="font-size: 32px;">🚨</div>
+      </div>
+    </div>
+
+    <!-- Alerts / Issues List -->
+    {% if all_issues %}
+    <div class="section-card">
+      <div class="section-title">
+        <span>⚠️ 需重点关注的异常与告警 ({{ all_issues | length }})</span>
+      </div>
+      <div>
+        {% for item in all_issues %}
+        <div class="issue-item">
+          <div>
+            <span class="issue-device">{{ item.device }}</span>
+            <span class="issue-text">{{ item.issue }}</span>
+          </div>
+          <span class="badge badge-{{ item.health_level }}">{{ item.health_level | upper }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Health Matrix -->
+    <div class="section-card">
+      <div class="section-title">
+        <span>📊 巡检设备健康矩阵汇总</span>
+      </div>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>设备名称</th>
+              <th>IP 地址</th>
+              <th>分类</th>
+              <th>综合评分</th>
+              <th>CPU利用率</th>
+              <th>内存利用率</th>
+              <th>温度</th>
+              <th>风扇</th>
+              <th>电源</th>
+              <th>NTP</th>
+              <th>状态评定</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in health_matrix %}
+            <tr>
+              <td><strong>{{ item.device_name }}</strong></td>
+              <td><code>{{ item.device_host }}</code></td>
+              <td><span class="badge badge-tag">{{ item.category }}</span></td>
+              <td>
+                <strong style="color: {{ item.health_score | status_color }};">
+                  {{ item.health_score }} 分
+                </strong>
+              </td>
+              <td>{{ item.cpu_usage | format_percent }}</td>
+              <td>{{ item.memory_usage | format_percent }}</td>
+              <td>{{ item.temperature | format_value }} ℃</td>
+              <td>{{ "正常" if item.fan_score >= 80 else "异常" }}</td>
+              <td>{{ "正常" if item.power_score >= 80 else "异常" }}</td>
+              <td>{{ "已同步" if item.ntp_score >= 80 else "未同步" }}</td>
+              <td>
+                <span class="badge badge-{{ item.health_level }}">
+                  {{ item.health_score | score_level }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Device Detail Cards -->
+    <div class="section-card">
+      <div class="section-title">
+        <span>🔍 设备巡检详情卡片</span>
+      </div>
+      <div class="device-grid">
+        {% for r in results %}
+        <div class="dev-card">
+          <div class="dev-card-header">
+            <div>
+              <div class="dev-card-title">{{ r.device_name }}</div>
+              <div class="dev-card-sub">{{ r.device_host }} · {{ r.category | upper }}</div>
+            </div>
+            <div>
+              <span class="badge badge-{{ r.health_level }}">
+                {{ r.health_score }} 分 ({{ r.health_score | score_level }})
+              </span>
+            </div>
+          </div>
+          <div class="dev-metrics-row">
+            <span class="dev-metrics-label">CPU / 内存使用率:</span>
+            <span class="dev-metrics-val">{{ r.cpu_usage | format_percent }} / {{ r.memory_usage | format_percent }}</span>
+          </div>
+          <div class="dev-metrics-row">
+            <span class="dev-metrics-label">设备运行温度:</span>
+            <span class="dev-metrics-val">{{ r.temperature | format_value }} ℃</span>
+          </div>
+          <div class="dev-metrics-row">
+            <span class="dev-metrics-label">风扇 / 电源状态:</span>
+            <span class="dev-metrics-val">{{ r.fan_status or '正常' }} / {{ r.power_status or '正常' }}</span>
+          </div>
+          <div class="dev-metrics-row">
+            <span class="dev-metrics-label">NTP 同步状态:</span>
+            <span class="dev-metrics-val">{{ r.ntp_status or '已同步' }}</span>
+          </div>
+          <div class="dev-metrics-row">
+            <span class="dev-metrics-label">持续运行时间:</span>
+            <span class="dev-metrics-val" style="font-size: 11px;">{{ r.uptime or 'N/A' }}</span>
+          </div>
+          {% if r.issues %}
+          <div style="margin-top: 10px; font-size: 12px; color: var(--danger); background: #fef2f2; padding: 6px 10px; border-radius: 6px;">
+            ⚠️ {{ r.issues | join('; ') }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      本报告由 <strong>华为数通自动化巡检平台</strong> 自动生成 · 报告生成时间: {{ generation_time }}
+    </div>
+  </div>
+</body>
+</html>

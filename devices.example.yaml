@@ -1,0 +1,30 @@
+# 华为数通设备清单配置示例
+# 支持交换机 (switch)、路由器 (router)、防火墙 (firewall)
+
+devices:
+  - name: "DC-Core-S6730"
+    host: "192.168.10.1"
+    port: 22
+    username: "admin"
+    password: "Huawei@Password123"
+    category: "switch"
+    device_type: "huawei_vrp"
+    location: "数据中心核心机房 A01"
+
+  - name: "WAN-Router-NE40E"
+    host: "192.168.20.1"
+    port: 22
+    username: "admin"
+    password: "Huawei@Password123"
+    category: "router"
+    device_type: "huawei_vrp"
+    location: "出口互联机房 B02"
+
+  - name: "Edge-Firewall-USG6650"
+    host: "192.168.30.1"
+    port: 22
+    username: "admin"
+    password: "Huawei@Password123"
+    category: "firewall"
+    device_type: "huawei_vrp"
+    location: "边界安全防护区 C01"

@@ -1,0 +1,37 @@
+# 华为数通设备健康巡检系统 - 配置文件
+
+# 数据库配置
+database:
+  url: "sqlite+aiosqlite:///./data/healthcheck.db"
+
+# SSH 默认连接配置
+ssh_defaults:
+  port: 22
+  timeout: 30
+  device_type: "huawei_vrp"
+
+# 健康指标阈值配置
+health_thresholds:
+  cpu:
+    warning: 60
+    critical: 80
+  memory:
+    warning: 70
+    critical: 85
+  temperature:
+    warning: 55
+    critical: 70
+  error_packets:
+    warning: 100
+    critical: 1000
+  session_usage_percent:
+    warning: 60
+    critical: 80
+
+# 报告输出目录
+report:
+  output_dir: "./reports"
+
+# 定时任务配置
+scheduler:
+  default_interval_hours: 24
