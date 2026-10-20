@@ -178,7 +178,7 @@ async function loadReports() {
 function viewOnline(row) {
   currentReport.value = row
   iframeLoading.value = true
-  previewUrl.value = `/api/reports/${row.task_id}/download`
+  previewUrl.value = `/api/reports/${row.task_id}/preview`
   previewDialogVisible.value = true
 }
 

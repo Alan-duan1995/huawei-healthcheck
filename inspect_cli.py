@@ -212,11 +212,46 @@ def main():
     parser.add_argument("-o", "--output", type=str, default=default_output, help="HTML 报告输出目录")
     parser.add_argument("-w", "--workers", type=int, default=5, help="并发巡检并发数 (默认 5)")
     parser.add_argument("--demo", action="store_true", help="演示模拟模式（内置交换机、路由器、防火墙仿真数据，无需连物理机）")
+    parser.add_argument("-i", "--interactive", action="store_true", help="开启交互式向导模式")
     parser.add_argument("--view", action="store_true", help="巡检完成后自动在默认浏览器中打开 HTML 报告")
 
     args = parser.parse_args()
 
-    if args.demo:
+    # 当未传入参数或显式指定 -i 时，启动友好的终端交互式向导
+    interactive_mode = args.interactive or (len(sys.argv) == 1)
+    if interactive_mode and not args.demo and "-c" not in sys.argv and "--config" not in sys.argv:
+        print("\033[36m" + "=" * 55)
+        print(" 请选择华为数通设备巡检模式：")
+        print("   1) 模拟仿真演练 (Demo，无需真实硬件，秒级出报告)")
+        print("   2) 真实设备巡检 (从 YAML 清单读取 IP 执行 SSH 采集)")
+        print("   3) 退出")
+        print("=" * 55 + "\033[0m")
+        try:
+            choice = input("请输入选项编号 [1-3, 默认 1]: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\n已取消。")
+            sys.exit(0)
+
+        if choice == "2":
+            cfg_input = input(f"请输入设备配置文件路径 [默认 {args.config}]: ").strip()
+            if cfg_input:
+                args.config = cfg_input
+            devices = load_devices_from_file(args.config)
+        elif choice == "3":
+            print("退出。")
+            sys.exit(0)
+        else:
+            print("\033[33m[*] 启动华为典型网络拓扑仿真巡检...\033[0m")
+            os.environ["MOCK_INSPECTION"] = "1"
+            devices = get_mock_devices()
+
+        try:
+            auto_open = input("是否在巡检完成后自动在浏览器中打开报告？[Y/n, 默认 Y]: ").strip().lower()
+            if auto_open in ("", "y", "yes"):
+                args.view = True
+        except (KeyboardInterrupt, EOFError):
+            pass
+    elif args.demo:
         print("\033[33m[*] 已开启【演示模拟仿真模式】，将对预设的典型华为数通网络拓扑进行全流程巡检\033[0m")
         os.environ["MOCK_INSPECTION"] = "1"
         devices = get_mock_devices()

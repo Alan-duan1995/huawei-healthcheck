@@ -9,7 +9,7 @@ import os
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -105,6 +105,7 @@ async def get_dashboard(db: AsyncSession = Depends(get_db)):
                         "device_host": r.device_host,
                         "issue": f"巡检失败: {r.error_message or '未知错误'}",
                         "severity": "critical",
+                        "level": "critical",
                     })
                 elif r.health_score is not None and r.health_score < 60:
                     issues_detail = []
@@ -132,11 +133,13 @@ async def get_dashboard(db: AsyncSession = Depends(get_db)):
                             pass
 
                     issue_text = "; ".join(issues_detail) if issues_detail else "健康评分低"
+                    sev = "critical" if r.health_score < 40 else "warning"
                     recent_issues.append({
                         "device_name": r.device_name,
                         "device_host": r.device_host,
                         "issue": issue_text,
-                        "severity": "critical" if r.health_score < 40 else "warning",
+                        "severity": sev,
+                        "level": sev,
                     })
 
             # 限制最多返回10条问题
@@ -322,6 +325,36 @@ async def download_report(
         filename=filename,
         media_type="text/html",
     )
+
+
+@router.get("/{task_id}/preview", summary="在线预览巡检报告")
+async def preview_report(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    在线预览 HTML 格式巡检报告（通过 iframe 内联展示，不触发下载附件）。
+    """
+    result = await db.execute(
+        select(InspectionTask).where(InspectionTask.id == task_id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"巡检任务 ID={task_id} 不存在",
+        )
+
+    if not task.report_path or not os.path.exists(task.report_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="报告文件不存在",
+        )
+
+    with open(task.report_path, "r", encoding="utf-8") as f:
+        html_str = f.read()
+
+    return HTMLResponse(content=html_str)
 
 
 @router.get("/{task_id}/matrix", summary="获取健康矩阵数据")
